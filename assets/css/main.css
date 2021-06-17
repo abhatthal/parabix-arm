@@ -1,0 +1,19 @@
+body {
+  background-color: #d3d6db !important;
+  /* margin: 0; */
+}
+
+main {
+  width: 50%;
+  margin: 15px auto;
+}
+
+code a,
+code a:hover {
+  text-decoration: none;
+  color: inherit;
+}
+
+.citation li::marker {
+  content: "[" counter(list-item, number) "] ";
+}

@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
-  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
   <title>Parabix on ARM</title>
   <meta content="" name="description" />
@@ -15,24 +15,96 @@
 
   <!-- CSS -->
   <link href="assets/css/main.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
   <!-- <link href="assets/css/fonts.css" rel="stylesheet" /> -->
   <!-- <link href="assets/css/mobile.css" media="screen and (max-device-width: 750px)" rel="stylesheet" /> -->
 </head>
 
 <body>
-  <h1>Introduction</h1>
+<main>
+  <h1>Parabix on ARM</h1>
   <p>
-    This project adds support for key Parabix operations on the ARM architecture targetting the SIMD Neon instructions
-    by reimplementing platform-specific x86 SSE instructions.
+    This project adds support for key Parabix operations such as transposition, long-stream addition and stream advance
+    on the ARM architecture targeting the SIMD Neon instructions by reimplementing platform-specific x86 SSE instructions.
+    Our code will closely follow the format of <code>idisa_sse_builder</code> in order to implement these features.
   </p>
-  <h1>Translation Example</h1>
   <p>
-    TODO: Add example here
+    Code-generation support is tested natively using a Raspberry Pi 2 Model B.
   </p>
-  <h1>Resources</h1>
+  <h2>Example Translation for
+    <code>
+      <a href="https://software.intel.com/sites/landingpage/IntrinsicsGuide/#!=undefined&text=movmsk&techs=SSE,SSE2,SSE3&expand=3869">
+        _mm_movmask_ps
+      </a>
+    </code>
+  </h2>
+  <h4>Description</h4>
+  <p>
+    Set each bit of mask <code>dst</code> based on the most significant bit of the corresponding packed single-precision (32-bit)
+    floating-point element in <code>a</code>.
+  </p>
+  <p>
+    We take a 4xi32 and want to resolve an integer bitmask of the MSBs.
+    This SSE instruction is simulated using a load, right shift, left shift, and horizontal vector addition in NEON.
+  </p>
+  <h4>Implementation</h4>
   <ul>
-    <li>Lorem</li>
-    <li>Ipsum</li>
+    <li>
+      <code><a href="https://developer.arm.com/architectures/instruction-sets/intrinsics/vld1q_s32">Vld1q_s32</a></code>
+      is used to <i>load</i> multiple single-element structures to up to four registers to store shift values.
+      We'll store the values {0, 1, 2, 3} to represent the positions of each of the MSBs.
+    </li>
+    <li>
+      We use <code><a href="https://developer.arm.com/architectures/instruction-sets/intrinsics/vshrq_n_u32">Vshrq_n_u32</a></code>
+      to <i>right shift</i> each of the 4 floats by 31 bits to resolve the most significant bits. Let's say, for example, that these are {0, 1, 1, 0}.
+    </li>
+    <li>
+      <code><a href="https://developer.arm.com/architectures/instruction-sets/intrinsics/vshlq_u32">Vshlq_u32</a></code>
+      is used to <i>left shift</i> every one of the MSBs we’ve got. We can apply our shift values we stored to shift every value by {0, 1, 2, 3} respectively.
+      After shifting this should resolve {0, 10, 100, 0000}.
+    </li>
+    <li>
+      <code><a href="https://developer.arm.com/architectures/instruction-sets/intrinsics/vaddvq_u32">Vaddvq_u32</a></code>
+       is used to <i>add</i> these values within the vector to resolve an integer.
+       In our example that'd be 0+10+100+0000=0110.
+    </li>
   </ul>
+
+  <h2>Resources</h2>
+  <ol class="citation">
+  <li>
+    Ong, “Porting Intel Intrinsics to Arm Neon Intrinsics”, CodeProject, 04-May-2021.
+    [Online]. Available: <br />
+    <a href="https://www.codeproject.com/Articles/5301747/Porting-Intel-Intrinsics-to-Arm-Neon-Intrinsics">
+      https://www.codeproject.com/Articles/5301747/Porting-Intel-Intrinsics-to-Arm-Neon-Intrinsics.
+    </a><br />
+    [Accessed: 17-Jun-2021].
+  </li>
+  <li>
+    Simd-Everywhere, “simd-everywhere/simde”, GitHub.
+    [Online]. Available: <br />
+    <a href="https://github.com/simd-everywhere/simde.">
+      https://github.com/simd-everywhere/simde.
+    </a><br />
+    [Accessed: 17-Jun-2021].
+  </li>
+  <li>
+    Intrinsics – Arm Developer.
+    [Online]. Available: <br />
+    <a href="https://developer.arm.com/architectures/instruction-sets/intrinsics.">
+      https://developer.arm.com/architectures/instruction-sets/intrinsics.
+    </a><br />
+    [Accessed: 17-Jun-2021].
+  </li>
+  <li>
+    Intel® Intrinsics Guide.
+    [Online]. Available: <br />
+    <a href="https://software.intel.com/sites/landingpage/IntrinsicsGuide.">
+      https://software.intel.com/sites/landingpage/IntrinsicsGuide.
+    </a><br />
+    [Accessed: 17-Jun-2021].
+  </li>
+  </ol>
+</main>
 </body>
 </html>
